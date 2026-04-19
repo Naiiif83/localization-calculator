@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>حاسبة التوطين الدفاعي | GAMI Localization Calculator</title>
+
+<!-- Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+    background: #f0f4f8;
+    color: #1a1a2e;
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  .header {
+    background: linear-gradient(135deg, #0d1b4b 0%, #1a3a7c 60%, #2e6da4 100%);
+    color: white;
+    padding: 28px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .header-logo {
+    width: 52px; height: 52px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+  }
+  .header-title h1 { font-size: 22px; font-weight: 700; }
+  .header-title p { font-size: 13px; opacity: 0.8; margin-top: 2px; }
+  .header-badge {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 20px;
+    padding: 6px 16px;
+    font-size: 12px;
+  }
+
+  /* LAYOUT */
+  .container { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
+
+  /* KPI CARDS */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .kpi-card {
+    background: white;
+    border-radius: 14px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    border-top: 4px solid #e0e0e0;
+    transition: transform 0.2s;
+  }
+  .kpi-card:hover { transform: translateY(-2px); }
+  .kpi-card.blue { border-top-color: #2e6da4; }
+  .kpi-card.green { border-top-color: #28a745; }
+  .kpi-card.orange { border-top-color: #fd7e14; }
+  .kpi-card.purple { border-top-color: #6f42c1; }
+  .kpi-value { font-size: 32px; font-weight: 800; color: #1a1a2e; line-height: 1; }
+  .kpi-label { font-size: 12px; color: #666; margin-top: 6px; }
+  .kpi-sub { font-size: 11px; color: #999; margin-top: 3px; }
+
+  /* PANELS */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+
+  .panel {
+    background: white;
+    border-radius: 14px;
+    padding: 24px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  }
+  .panel-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #f0f4f8;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel-title span { font-size: 18px; }
+
+  /* COMPANY INFO */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group label { font-size: 12px; color: #666; font-weight: 600; }
+  .form-group input, .form-group select {
+    padding: 9px 12px;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    transition: border-color 0.2s;
+    background: #fafafa;
+  }
+  .form-group input:focus, .form-group select:focus {
+    outline: none;
+    border-color: #2e6da4;
+    background: white;
+  }
+
+  /* SUPPLIER TABLE */
+  .supplier-row {
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 1.5fr 1fr auto;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .supplier-row input, .supplier-row select {
+    padding: 8px 10px;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    background: #fafafa;
+  }
+  .supplier-row input:focus, .supplier-row select:focus {
+    outline: none;
+    border-color: #2e6da4;
+    background: white;
+  }
+  .supplier-header {
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 1.5fr 1fr auto;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 11px;
+    color: #888;
+    font-weight: 600;
+    padding: 0 2px;
+  }
+
+  /* BUTTONS */
+  .btn {
+    padding: 9px 18px;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-primary { background: #2e6da4; color: white; }
+  .btn-primary:hover { background: #1a5a8f; transform: translateY(-1px); }
+  .btn-success { background: #28a745; color: white; }
+  .btn-success:hover { background: #218838; }
+  .btn-danger { background: #dc3545; color: white; padding: 7px 12px; }
+  .btn-danger:hover { background: #c82333; }
+  .btn-outline {
+    background: white;
+    color: #2e6da4;
+    border: 1.5px solid #2e6da4;
+  }
+  .btn-outline:hover { background: #f0f6ff; }
+  .btn-lg { padding: 13px 28px; font-size: 15px; border-radius: 10px; }
+
+  .btn-row { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+
+  /* UPLOAD ZONE */
+  .upload-zone {
+    border: 2px dashed #b0c4de;
+    border-radius: 12px;
+    padding: 28px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #f8fbff;
+  }
+  .upload-zone:hover { border-color: #2e6da4; background: #f0f6ff; }
+  .upload-zone .upload-icon { font-size: 36px; margin-bottom: 10px; }
+  .upload-zone p { font-size: 13px; color: #666; }
+  .upload-zone strong { color: #2e6da4; }
+  #fileInput { display: none; }
+
+  /* GAUGE */
+  .gauge-container { text-align: center; padding: 10px 0; }
+  .gauge-value { font-size: 54px; font-weight: 900; line-height: 1; }
+  .gauge-label { font-size: 13px; color: #666; margin-top: 6px; }
+  .gauge-bar-wrap {
+    background: #f0f0f0;
+    border-radius: 20px;
+    height: 16px;
+    margin: 14px 0 8px;
+    overflow: hidden;
+    position: relative;
+  }
+  .gauge-bar {
+    height: 100%;
+    border-radius: 20px;
+    transition: width 1s ease;
+    position: relative;
+  }
+  .gauge-targets {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: #999;
+  }
+
+  /* RECOMMENDATIONS */
+  .rec-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    border-right: 4px solid;
+  }
+  .rec-item.high { background: #fff5f5; border-color: #dc3545; }
+  .rec-item.medium { background: #fff8f0; border-color: #fd7e14; }
+  .rec-item.low { background: #f0fff4; border-color: #28a745; }
+  .rec-icon { font-size: 20px; flex-shrink: 0; }
+  .rec-title { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+  .rec-desc { font-size: 12px; color: #666; line-height: 1.5; }
+
+  /* STATUS BADGE */
+  .status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .status-danger { background: #fff0f0; color: #dc3545; border: 1px solid #ffcdd2; }
+  .status-warning { background: #fff8f0; color: #fd7e14; border: 1px solid #ffe0b2; }
+  .status-success { background: #f0fff4; color: #28a745; border: 1px solid #c8e6c9; }
+
+  /* SUPPLIERS TABLE DISPLAY */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .data-table th {
+    background: #1a3a7c;
+    color: white;
+    padding: 10px 12px;
+    text-align: right;
+    font-weight: 600;
+  }
+  .data-table td { padding: 9px 12px; border-bottom: 1px solid #f0f0f0; }
+  .data-table tr:nth-child(even) td { background: #f8fbff; }
+  .data-table tr:hover td { background: #f0f6ff; }
+  .local-tag { color: #28a745; font-weight: 700; }
+  .foreign-tag { color: #dc3545; font-weight: 700; }
+
+  /* SECTION FULL WIDTH */
+  .full-width { margin-bottom: 20px; }
+
+  /* ACTION FOOTER */
+  .action-footer {
+    background: white;
+    border-radius: 14px;
+    padding: 24px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 30px;
+  }
+  .action-footer-text h3 { font-size: 16px; font-weight: 700; }
+  .action-footer-text p { font-size: 13px; color: #666; margin-top: 3px; }
+
+  /* PROGRESS RING */
+  .progress-ring-wrap { position: relative; display: inline-block; }
+
+  /* ALERT */
+  .alert {
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .alert-info { background: #e8f4fd; color: #1a5a8f; border: 1px solid #bee3f8; }
+  .alert-success { background: #f0fff4; color: #276749; border: 1px solid #c6f6d5; }
+
+  /* CHART CONTAINER */
+  .chart-wrap { position: relative; height: 220px; }
+
+  /* RESPONSIVE */
+  @media(max-width: 768px) {
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+    .supplier-row { grid-template-columns: 1fr 1fr; }
+  }
+
+  .hidden { display: none; }
+  .mt-10 { margin-top: 10px; }
+  .mt-16 { margin-top: 16px; }
+
+  /* STEP INDICATOR */
+  .steps {
+    display: flex;
+    gap: 0;
+    margin-bottom: 28px;
+    background: white;
+    border-radius: 14px;
+    padding: 16px 24px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    align-items: center;
+  }
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+  }
+  .step-num {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: #e0e0e0;
+    color: #999;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    flex-shrink: 0;
+    transition: all 0.3s;
+  }
+  .step.active .step-num { background: #2e6da4; color: white; }
+  .step.done .step-num { background: #28a745; color: white; }
+  .step-text { font-size: 12px; color: #999; }
+  .step.active .step-text { color: #2e6da4; font-weight: 700; }
+  .step.done .step-text { color: #28a745; }
+  .step-arrow { color: #ddd; font-size: 18px; margin: 0 8px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-right">
+    <div class="header-logo">🛡️</div>
+    <div class="header-title">
+      <h1>حاسبة التوطين الدفاعي</h1>
+      <p>أداة قياس وتوثيق المحتوى المحلي للصناعات العسكرية السعودية</p>
+    </div>
+  </div>
+  <div class="header-badge">🎯 هدف GAMI: 50% بحلول 2030</div>
+</div>
+
+<div class="container">
+
+  <!-- STEPS -->
+  <div class="steps">
+    <div class="step active" id="step1">
+      <div class="step-num">1</div>
+      <div class="step-text">بيانات الشركة</div>
+    </div>
+    <div class="step-arrow">←</div>
+    <div class="step" id="step2">
+      <div class="step-num">2</div>
+      <div class="step-text">إدخال الموردين</div>
+    </div>
+    <div class="step-arrow">←</div>
+    <div class="step" id="step3">
+      <div class="step-num">3</div>
+      <div class="step-text">النتائج والتحليل</div>
+    </div>
+    <div class="step-arrow">←</div>
+    <div class="step" id="step4">
+      <div class="step-num">4</div>
+      <div class="step-text">تحميل التقرير</div>
+    </div>
+  </div>
+
+  <!-- KPI CARDS -->
+  <div class="kpi-row">
+    <div class="kpi-card blue">
+      <div class="kpi-value" id="kpi-total">0</div>
+      <div class="kpi-label">إجمالي الإنفاق (ريال)</div>
+      <div class="kpi-sub">جميع الموردين</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-value" id="kpi-local">0</div>
+      <div class="kpi-label">الإنفاق المحلي (ريال)</div>
+      <div class="kpi-sub">موردون سعوديون</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-value" id="kpi-rate" style="color:#fd7e14">0%</div>
+      <div class="kpi-label">نسبة التوطين الحالية</div>
+      <div class="kpi-sub">معيار GAMI</div>
+    </div>
+    <div class="kpi-card purple">
+      <div class="kpi-value" id="kpi-gap" style="color:#6f42c1">0%</div>
+      <div class="kpi-label">الفجوة عن هدف 2030</div>
+      <div class="kpi-sub">المطلوب تحقيقه</div>
+    </div>
+  </div>
+
+  <!-- SECTION 1: COMPANY INFO -->
+  <div class="panel full-width" id="section-company">
+    <div class="panel-title"><span>🏢</span> بيانات الشركة</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>اسم الشركة *</label>
+        <input type="text" id="companyName" placeholder="مثال: شركة الدفاع المتحدة" />
+      </div>
+      <div class="form-group">
+        <label>رقم السجل التجاري</label>
+        <input type="text" id="companyReg" placeholder="1234567890" />
+      </div>
+      <div class="form-group">
+        <label>قطاع النشاط</label>
+        <select id="companySector">
+          <option value="">اختر القطاع</option>
+          <option>أنظمة الطيران والمسيّرات</option>
+          <option>الذخائر والأسلحة</option>
+          <option>الإلكترونيات والاتصالات</option>
+          <option>المركبات والمدرعات</option>
+          <option>الأمن السيبراني</option>
+          <option>الصيانة والإسناد</option>
+          <option>سلاسل الإمداد</option>
+          <option>أخرى</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>السنة المالية</label>
+        <select id="fiscalYear">
+          <option>2025</option>
+          <option selected>2026</option>
+          <option>2027</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>المدينة</label>
+        <input type="text" id="companyCity" placeholder="الرياض" />
+      </div>
+      <div class="form-group">
+        <label>اسم المسؤول</label>
+        <input type="text" id="contactName" placeholder="اسم مدير الإنتاج أو المشتريات" />
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: SUPPLIERS INPUT -->
+  <div class="grid-2">
+    <div class="panel">
+      <div class="panel-title"><span>✍️</span> إدخال يدوي للموردين</div>
+
+      <div class="supplier-header">
+        <span>اسم المورد</span>
+        <span>المبلغ (ريال)</span>
+        <span>نوع المورد</span>
+        <span>الفئة</span>
+        <span></span>
+      </div>
+      <div id="supplierRows"></div>
+
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="addSupplierRow()">+ إضافة مورد</button>
+        <button class="btn btn-primary" onclick="calculate()">⚡ احسب التوطين</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title"><span>📊</span> رفع ملف Excel</div>
+      <div class="alert alert-info">
+        <span>💡</span>
+        <div>الملف يجب أن يحتوي على أعمدة: <strong>اسم المورد، المبلغ، النوع (محلي/أجنبي)</strong></div>
+      </div>
+      <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+        <div class="upload-icon">📁</div>
+        <p><strong>اضغط لرفع ملف Excel</strong></p>
+        <p>.xlsx أو .xls</p>
+        <div id="uploadStatus" class="mt-10" style="color:#28a745;font-weight:600;"></div>
+      </div>
+      <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="handleExcel(event)">
+
+      <div class="mt-16">
+        <button class="btn btn-outline" onclick="downloadTemplate()">
+          ⬇️ تحميل نموذج Excel جاهز
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: RESULTS (hidden until calculated) -->
+  <div id="results-section" class="hidden">
+
+    <!-- GAUGE + PIE -->
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-title"><span>🎯</span> نسبة التوطين</div>
+        <div class="gauge-container">
+          <div class="gauge-value" id="gaugeValue" style="color:#fd7e14">0%</div>
+          <div class="gauge-label" id="gaugeStatus">جارٍ الحساب...</div>
+          <div class="gauge-bar-wrap">
+            <div class="gauge-bar" id="gaugeBar" style="width:0%;background:#fd7e14;"></div>
+          </div>
+          <div class="gauge-targets">
+            <span>0%</span>
+            <span>هدف 2024: 25%</span>
+            <span>هدف 2030: 50%</span>
+            <span>100%</span>
+          </div>
+        </div>
+        <div style="text-align:center;margin-top:16px;">
+          <span class="status-badge" id="statusBadge">—</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><span>📈</span> توزيع الإنفاق</div>
+        <div class="chart-wrap">
+          <canvas id="pieChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- BAR CHART + SUPPLIERS TABLE -->
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-title"><span>📊</span> مقارنة بأهداف GAMI</div>
+        <div class="chart-wrap">
+          <canvas id="barChart"></canvas>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><span>🏭</span> أكبر الموردين المحليين</div>
+        <div id="topLocalTable"></div>
+      </div>
+    </div>
+
+    <!-- RECOMMENDATIONS -->
+    <div class="panel full-width">
+      <div class="panel-title"><span>💡</span> التوصيات لرفع نسبة التوطين</div>
+      <div id="recommendations"></div>
+    </div>
+
+  </div>
+
+  <!-- ACTION FOOTER -->
+  <div class="action-footer" id="action-footer">
+    <div class="action-footer-text">
+      <h3>جاهز لتحميل التقرير؟</h3>
+      <p>تقرير PDF احترافي جاهز للرفع إلى GAMI</p>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <button class="btn btn-success btn-lg" onclick="generatePDF()">
+        📄 تحميل تقرير PDF
+      </button>
+      <button class="btn btn-outline btn-lg" onclick="resetAll()">
+        🔄 حساب جديد
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── DATA ───
+let suppliers = [];
+let pieChartInstance = null;
+let barChartInstance = null;
+
+// ─── INIT ───
+window.onload = () => {
+  addSupplierRow();
+  addSupplierRow();
+  addSupplierRow();
+};
+
+// ─── SUPPLIER ROWS ───
+function addSupplierRow() {
+  const container = document.getElementById('supplierRows');
+  const row = document.createElement('div');
+  row.className = 'supplier-row';
+  row.innerHTML = `
+    <input type="text" placeholder="اسم المورد" class="s-name">
+    <input type="number" placeholder="0" min="0" class="s-amount">
+    <select class="s-type">
+      <option value="local">🇸🇦 محلي</option>
+      <option value="foreign">🌍 أجنبي</option>
+    </select>
+    <input type="text" placeholder="الفئة" class="s-cat">
+    <button class="btn btn-danger" onclick="this.parentElement.remove()">✕</button>
+  `;
+  container.appendChild(row);
+}
+
+// ─── EXCEL UPLOAD ───
+function handleExcel(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const wb = XLSX.read(e.target.result, { type: 'binary' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const data = XLSX.utils.sheet_to_json(ws);
+    const container = document.getElementById('supplierRows');
+    let added = 0;
+    data.forEach(row => {
+      const name = row['اسم المورد'] || row['name'] || row['Name'] || '';
+      const amount = parseFloat(row['المبلغ'] || row['amount'] || row['Amount'] || 0);
+      const type = (row['النوع'] || row['type'] || row['Type'] || '').toLowerCase();
+      if (name && amount > 0) {
+        const rowEl = document.createElement('div');
+        rowEl.className = 'supplier-row';
+        const isLocal = type.includes('محلي') || type.includes('local');
+        rowEl.innerHTML = `
+          <input type="text" value="${name}" class="s-name">
+          <input type="number" value="${amount}" min="0" class="s-amount">
+          <select class="s-type">
+            <option value="local" ${isLocal ? 'selected' : ''}>🇸🇦 محلي</option>
+            <option value="foreign" ${!isLocal ? 'selected' : ''}>🌍 أجنبي</option>
+          </select>
+          <input type="text" placeholder="الفئة" class="s-cat">
+          <button class="btn btn-danger" onclick="this.parentElement.remove()">✕</button>
+        `;
+        container.appendChild(rowEl);
+        added++;
+      }
+    });
+    document.getElementById('uploadStatus').textContent = `✅ تم استيراد ${added} مورد من الملف`;
+  };
+  reader.readAsBinaryString(file);
+}
+
+// ─── DOWNLOAD TEMPLATE ───
+function downloadTemplate() {
+  const ws = XLSX.utils.aoa_to_sheet([
+    ['اسم المورد', 'المبلغ', 'النوع', 'الفئة'],
+    ['شركة التقنية السعودية', 500000, 'محلي', 'إلكترونيات'],
+    ['Boeing Arabia', 1200000, 'أجنبي', 'طيران'],
+    ['مصنع الدفاع الوطني', 750000, 'محلي', 'تصنيع'],
+  ]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'الموردين');
+  XLSX.writeFile(wb, 'نموذج_الموردين.xlsx');
+}
+
+// ─── CALCULATE ───
+function calculate() {
+  // collect rows
+  suppliers = [];
+  document.querySelectorAll('.supplier-row').forEach(row => {
+    const name = row.querySelector('.s-name')?.value.trim();
+    const amount = parseFloat(row.querySelector('.s-amount')?.value || 0);
+    const type = row.querySelector('.s-type')?.value;
+    const cat = row.querySelector('.s-cat')?.value.trim() || '—';
+    if (name && amount > 0) {
+      suppliers.push({ name, amount, type, cat });
+    }
+  });
+
+  if (suppliers.length === 0) {
+    alert('الرجاء إدخال بيانات المورد أولاً');
+    return;
+  }
+
+  const total = suppliers.reduce((s, r) => s + r.amount, 0);
+  const local = suppliers.filter(r => r.type === 'local').reduce((s, r) => s + r.amount, 0);
+  const rate = total > 0 ? (local / total) * 100 : 0;
+  const gap = Math.max(0, 50 - rate);
+
+  // Update KPIs
+  document.getElementById('kpi-total').textContent = formatNum(total);
+  document.getElementById('kpi-local').textContent = formatNum(local);
+  document.getElementById('kpi-rate').textContent = rate.toFixed(1) + '%';
+  document.getElementById('kpi-gap').textContent = gap.toFixed(1) + '%';
+
+  // Gauge
+  const gaugeVal = document.getElementById('gaugeValue');
+  const gaugeBar = document.getElementById('gaugeBar');
+  const gaugeStatus = document.getElementById('gaugeStatus');
+  const statusBadge = document.getElementById('statusBadge');
+
+  gaugeVal.textContent = rate.toFixed(1) + '%';
+  gaugeBar.style.width = Math.min(rate, 100) + '%';
+
+  let color, statusText, badgeClass, badgeText;
+  if (rate >= 50) {
+    color = '#28a745';
+    statusText = '🎉 تجاوزت هدف GAMI 2030';
+    badgeClass = 'status-success';
+    badgeText = '✅ ممتاز — يتجاوز هدف 2030';
+  } else if (rate >= 25) {
+    color = '#fd7e14';
+    statusText = '📈 قريب من هدف 2024 (25%)';
+    badgeClass = 'status-warning';
+    badgeText = '⚠️ متوسط — في مسار الهدف';
+  } else {
+    color = '#dc3545';
+    statusText = '⚠️ أقل من متوسط السوق';
+    badgeClass = 'status-danger';
+    badgeText = '🔴 يحتاج تحسين عاجل';
+  }
+
+  gaugeVal.style.color = color;
+  gaugeBar.style.background = color;
+  gaugeStatus.textContent = statusText;
+  statusBadge.className = 'status-badge ' + badgeClass;
+  statusBadge.textContent = badgeText;
+
+  // Charts
+  renderPieChart(local, total - local);
+  renderBarChart(rate);
+
+  // Top local suppliers
+  renderTopLocal();
+
+  // Recommendations
+  renderRecommendations(rate, suppliers, total);
+
+  // Steps
+  setStep(3);
+
+  // Show results
+  document.getElementById('results-section').classList.remove('hidden');
+  document.getElementById('results-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ─── PIE CHART ───
+function renderPieChart(local, foreign) {
+  if (pieChartInstance) pieChartInstance.destroy();
+  const ctx = document.getElementById('pieChart').getContext('2d');
+  pieChartInstance = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['محلي 🇸🇦', 'أجنبي 🌍'],
+      datasets: [{
+        data: [local, foreign],
+        backgroundColor: ['#28a745', '#dc3545'],
+        borderWidth: 3,
+        borderColor: '#fff'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 13 } } },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => ` ${formatNum(ctx.raw)} ريال`
+          }
+        }
+      },
+      cutout: '65%'
+    }
+  });
+}
+
+// ─── BAR CHART ───
+function renderBarChart(rate) {
+  if (barChartInstance) barChartInstance.destroy();
+  const ctx = document.getElementById('barChart').getContext('2d');
+  barChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['نسبتك الحالية', 'متوسط GAMI 2024', 'هدف 2030'],
+      datasets: [{
+        label: 'نسبة التوطين %',
+        data: [rate.toFixed(1), 24.89, 50],
+        backgroundColor: [
+          rate >= 50 ? '#28a745' : rate >= 25 ? '#fd7e14' : '#dc3545',
+          '#2e6da4',
+          '#6f42c1'
+        ],
+        borderRadius: 8,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 60,
+          ticks: { callback: v => v + '%' },
+          grid: { color: '#f0f0f0' }
+        },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+// ─── TOP LOCAL TABLE ───
+function renderTopLocal() {
+  const localSuppliers = suppliers
+    .filter(s => s.type === 'local')
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 5);
+
+  const total = suppliers.reduce((s, r) => s + r.amount, 0);
+  let html = `<table class="data-table">
+    <tr><th>المورد</th><th>المبلغ</th><th>النسبة</th></tr>`;
+
+  if (localSuppliers.length === 0) {
+    html += `<tr><td colspan="3" style="text-align:center;color:#999;padding:20px;">لا يوجد موردون محليون</td></tr>`;
+  } else {
+    localSuppliers.forEach(s => {
+      const pct = ((s.amount / total) * 100).toFixed(1);
+      html += `<tr>
+        <td>${s.name}</td>
+        <td class="local-tag">${formatNum(s.amount)}</td>
+        <td>${pct}%</td>
+      </tr>`;
+    });
+  }
+  html += `</table>`;
+  document.getElementById('topLocalTable').innerHTML = html;
+}
+
+// ─── RECOMMENDATIONS ───
+function renderRecommendations(rate, suppliers, total) {
+  const recs = [];
+  const foreignSuppliers = suppliers.filter(s => s.type === 'foreign').sort((a, b) => b.amount - a.amount);
+  const gapAmount = Math.max(0, (50 - rate) / 100 * total);
+
+  if (rate < 25) {
+    recs.push({
+      level: 'high',
+      icon: '🚨',
+      title: 'إجراء عاجل: نسبتك أقل من متوسط السوق (24.89%)',
+      desc: `تحتاج رفع الإنفاق المحلي بمقدار ${formatNum(gapAmount)} ريال على الأقل للوصول لمتوسط السوق. ابدأ بالتفاوض مع موردين سعوديين بديلين لأكبر بنود الإنفاق الأجنبي.`
+    });
+  }
+
+  if (foreignSuppliers.length > 0) {
+    recs.push({
+      level: rate < 30 ? 'high' : 'medium',
+      icon: '🔄',
+      title: `بدّل أكبر مورد أجنبي: "${foreignSuppliers[0].name}"`,
+      desc: `إنفاقك عليه ${formatNum(foreignSuppliers[0].amount)} ريال. ابحث عن بديل محلي لهذه الفئة في قاعدة بيانات GAMI للموردين المرخصين. استبدال 30% منه يرفع نسبتك بشكل ملحوظ.`
+    });
+  }
+
+  if (rate < 50) {
+    recs.push({
+      level: 'medium',
+      icon: '🤝',
+      title: 'سجّل في برنامج المشاركة الصناعية',
+      desc: 'برنامج GAMI للمشاركة الصناعية يساعدك على ربطك بموردين محليين مؤهلين ويحتسب مساهماتهم بشكل رسمي في نسبة توطينك.'
+    });
+  }
+
+  recs.push({
+    level: 'low',
+    icon: '📋',
+    title: 'وثّق جميع مشترياتك المحلية',
+    desc: 'كثير من الشركات لا توثق خدمات الصيانة والنقل والتدريب كمحتوى محلي. هذه البنود تُحتسب وترفع نسبتك. احرص على توثيق كل ريال تنفقه محلياً.'
+  });
+
+  if (rate >= 50) {
+    recs.push({
+      level: 'low',
+      icon: '🏆',
+      title: 'تقدم لشهادة التميز من GAMI',
+      desc: 'شركتك تجاوزت هدف 2030. تقدم للحصول على شهادة "مورد متميز" من GAMI — تفتح لك أبواب عقود حكومية أكبر وأفضلية في المناقصات.'
+    });
+  }
+
+  document.getElementById('recommendations').innerHTML = recs.map(r => `
+    <div class="rec-item ${r.level}">
+      <div class="rec-icon">${r.icon}</div>
+      <div>
+        <div class="rec-title">${r.title}</div>
+        <div class="rec-desc">${r.desc}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─── GENERATE PDF ───
+function generatePDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+  const company = document.getElementById('companyName').value || 'الشركة';
+  const sector = document.getElementById('companySector').value || '—';
+  const year = document.getElementById('fiscalYear').value;
+  const contact = document.getElementById('contactName').value || '—';
+  const city = document.getElementById('companyCity').value || '—';
+  const reg = document.getElementById('companyReg').value || '—';
+
+  const total = suppliers.reduce((s, r) => s + r.amount, 0);
+  const local = suppliers.filter(r => r.type === 'local').reduce((s, r) => s + r.amount, 0);
+  const rate = total > 0 ? (local / total) * 100 : 0;
+
+  const today = new Date().toLocaleDateString('ar-SA');
+
+  // BG
+  doc.setFillColor(13, 27, 75);
+  doc.rect(0, 0, 210, 45, 'F');
+
+  // Title
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(20);
+  doc.text('Defense Localization Report', 105, 20, { align: 'center' });
+  doc.setFontSize(13);
+  doc.text('تقرير التوطين الدفاعي - GAMI', 105, 30, { align: 'center' });
+  doc.setFontSize(10);
+  doc.text(`${company} | ${year}`, 105, 40, { align: 'center' });
+
+  // Company Info Box
+  doc.setFillColor(240, 244, 248);
+  doc.rect(10, 50, 190, 40, 'F');
+  doc.setTextColor(30, 30, 30);
+  doc.setFontSize(10);
+  doc.text(`Company: ${company}`, 15, 60);
+  doc.text(`Sector: ${sector}`, 15, 68);
+  doc.text(`City: ${city}`, 15, 76);
+  doc.text(`Reg No: ${reg}`, 110, 60);
+  doc.text(`Contact: ${contact}`, 110, 68);
+  doc.text(`Date: ${today}`, 110, 76);
+  doc.text(`Fiscal Year: ${year}`, 110, 84);
+
+  // KPIs
+  const kpis = [
+    { label: 'Total Spend', value: formatNum(total) + ' SAR', color: [46, 109, 164] },
+    { label: 'Local Spend', value: formatNum(local) + ' SAR', color: [40, 167, 69] },
+    { label: 'Localization Rate', value: rate.toFixed(1) + '%', color: rate >= 50 ? [40,167,69] : rate >= 25 ? [253,126,20] : [220,53,69] },
+    { label: 'Gap to 2030 Goal', value: Math.max(0, 50 - rate).toFixed(1) + '%', color: [111, 66, 193] },
+  ];
+
+  kpis.forEach((k, i) => {
+    const x = 10 + i * 47.5;
+    doc.setFillColor(...k.color);
+    doc.roundedRect(x, 97, 44, 22, 3, 3, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14);
+    doc.text(k.value, x + 22, 108, { align: 'center' });
+    doc.setFontSize(8);
+    doc.text(k.label, x + 22, 115, { align: 'center' });
+  });
+
+  // Gauge visual
+  doc.setFillColor(240, 240, 240);
+  doc.rect(10, 126, 190, 8, 'F');
+  const fillW = Math.min((rate / 100) * 190, 190);
+  const gaugeColor = rate >= 50 ? [40,167,69] : rate >= 25 ? [253,126,20] : [220,53,69];
+  doc.setFillColor(...gaugeColor);
+  doc.rect(10, 126, fillW, 8, 'F');
+  doc.setTextColor(100,100,100);
+  doc.setFontSize(8);
+  doc.text('0%', 10, 140);
+  doc.text('25% (2024 Target)', 55, 140);
+  doc.text('50% (2030 Target)', 110, 140);
+  doc.text('100%', 192, 140);
+
+  // Suppliers Table
+  doc.setTextColor(30, 30, 30);
+  doc.setFontSize(12);
+  doc.text('Suppliers Detail | تفاصيل الموردين', 105, 150, { align: 'center' });
+
+  const tableData = suppliers.map(s => [
+    s.name,
+    formatNum(s.amount) + ' SAR',
+    s.type === 'local' ? 'Local 🇸🇦' : 'Foreign 🌍',
+    s.cat,
+    ((s.amount / total) * 100).toFixed(1) + '%'
+  ]);
+
+  doc.autoTable({
+    startY: 155,
+    head: [['Supplier Name', 'Amount', 'Type', 'Category', 'Share %']],
+    body: tableData,
+    theme: 'grid',
+    headStyles: { fillColor: [13, 27, 75], textColor: 255, fontSize: 9 },
+    bodyStyles: { fontSize: 9 },
+    alternateRowStyles: { fillColor: [240, 244, 248] },
+    margin: { left: 10, right: 10 },
+  });
+
+  const finalY = doc.lastAutoTable.finalY + 10;
+
+  // Footer
+  doc.setFillColor(13, 27, 75);
+  doc.rect(0, 277, 210, 20, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(9);
+  doc.text('Generated by Defense Localization Calculator | GAMI Compliance Tool', 105, 286, { align: 'center' });
+  doc.text(`www.gami.gov.sa | ${today}`, 105, 292, { align: 'center' });
+
+  doc.save(`تقرير_التوطين_${company}_${year}.pdf`);
+  setStep(4);
+
+  document.getElementById('action-footer').style.background = '#f0fff4';
+}
+
+// ─── UTILS ───
+function formatNum(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(0) + 'K';
+  return n.toLocaleString('ar');
+}
+
+function setStep(n) {
+  [1,2,3,4].forEach(i => {
+    const el = document.getElementById('step' + i);
+    el.classList.remove('active', 'done');
+    if (i < n) el.classList.add('done');
+    if (i === n) el.classList.add('active');
+  });
+}
+
+function resetAll() {
+  suppliers = [];
+  document.getElementById('supplierRows').innerHTML = '';
+  document.getElementById('results-section').classList.add('hidden');
+  ['kpi-total','kpi-local'].forEach(id => document.getElementById(id).textContent = '0');
+  document.getElementById('kpi-rate').textContent = '0%';
+  document.getElementById('kpi-gap').textContent = '0%';
+  addSupplierRow(); addSupplierRow(); addSupplierRow();
+  setStep(1);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
